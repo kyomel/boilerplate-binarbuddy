@@ -9,25 +9,25 @@ import (
 	"net/http"
 )
 
-type AuthorsController interface {
-	CreateAuthor(w http.ResponseWriter, r *http.Request)
+type UsersController interface {
+	RegisterUser(w http.ResponseWriter, r *http.Request)
 }
 
-type authorController struct {
-	authorUC usecases.AuthorUseCase
-	r        routers.Resultset
+type userController struct {
+	userUC usecases.UserUseCase
+	r      routers.Resultset
 }
 
-func NewAuthorsController(authorUC usecases.AuthorUseCase, r routers.Resultset) AuthorsController {
-	return &authorController{
-		authorUC,
+func NewUsersController(userUC usecases.UserUseCase, r routers.Resultset) UsersController {
+	return &userController{
+		userUC,
 		r,
 	}
 }
 
-func (c *authorController) CreateAuthor(w http.ResponseWriter, r *http.Request) {
+func (c *userController) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var (
-		request     models.AuthorReq
+		request     models.RegisterRequest
 		successResp models.SuccessResponse
 		errResp     models.ErrorResponse
 	)
@@ -42,7 +42,7 @@ func (c *authorController) CreateAuthor(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	res, err := c.authorUC.CreateAuthor(r.Context(), &request)
+	res, err := c.userUC.RegisterUser(r.Context(), &request)
 	if err != nil {
 		errResp.Status = http.StatusInternalServerError
 		errResp.Error = utils.INTERNAL_SERVER_ERROR
@@ -54,6 +54,6 @@ func (c *authorController) CreateAuthor(w http.ResponseWriter, r *http.Request) 
 
 	successResp.Data = res
 	successResp.Status = http.StatusCreated
-	successResp.Message = "Author created successfully"
+	successResp.Message = "User created successfully"
 	c.r.ResponsWithJSON(w, http.StatusCreated, successResp)
 }

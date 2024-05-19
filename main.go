@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
 	"fmt"
 	"log"
 	"net/http"
@@ -47,6 +49,13 @@ func main() {
 	portDB, _ := strconv.Atoi(dbPort)
 	portConnect, _ := strconv.Atoi(port)
 
+	// Auth Settings
+	secret := "AES256Key-32Characters1234567890"
+	signKey, err := rsa.GenerateKey(rand.Reader, 4096)
+	if err != nil {
+		panic(err)
+	}
+
 	db, err := dbRepoConn.Connect(dbHost, portDB, dbUser, dbPassword, dbName, sslMode)
 	if err != nil {
 		log.Fatal(err)
@@ -54,12 +63,15 @@ func main() {
 
 	// Call Repositories
 	authorRepo := repositories.NewAuthorRepository(db)
+	userRepo := repositories.NewUserRepository(db, secret, 1, 64*1024, 4, 32, signKey, 60*time.Second)
 
 	// Call UseCases
 	authorUC := usecases.NewAuthorUseCase(timeoutContext, authorRepo, db)
+	userUC := usecases.NewUserUseCase(timeoutContext, userRepo, db)
 
 	// Call Controllers
 	author := c.NewAuthorsController(authorUC, httpResult)
+	user := c.NewUsersController(userUC, httpResult)
 
 	// Define a simple GET route
 	httpRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -68,6 +80,7 @@ func main() {
 	})
 
 	httpRouter.Post("/authors", author.CreateAuthor)
+	httpRouter.Post("/users/register", user.RegisterUser)
 
 	// Start the server
 	fmt.Printf("Starting %s on port %d\n", appName, portConnect)
